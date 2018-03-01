@@ -25,7 +25,7 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 	MainFrame frame;
 	boolean start;
 	Thread thread;
-	
+	int time;
 	public PlayField() {
 		
 		setSize(450, 450);
@@ -62,17 +62,18 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 		this.add(mainImage);
 		this.add(clock);
 		start=false;	
-		
 	}
 	
 	
 	public void init(int[][] position) {
+		time=0;
 		this.position=position;
 		specialPieceLocation=this.findSpecialPieces();		
 		update();
 		start=true;
-		thread=new Thread(this);
-		thread.start();
+		
+		if(thread==null) thread=new Thread(this);
+		if(!thread.isAlive()) thread.start();
 	}
 	
 	private void update() {
@@ -169,7 +170,7 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 	@SuppressWarnings("static-access")
 	@Override
 	public void run() {
-		int time=0;
+		
 		while(start) {
 			try {
 				int temp=time,a;
@@ -198,5 +199,7 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		this.thread=null;
 	}
 }

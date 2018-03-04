@@ -20,6 +20,8 @@ public class Server {
 	private ServerSocket server;
 	Vector<Worker> workers;
 	
+	
+	
 	public Server() throws IOException {
 		server=new ServerSocket(9696);
 		workers=new Vector<Worker>();
@@ -51,7 +53,7 @@ public class Server {
 		Socket conn;
 		DataOutputStream dos;
 		DataInputStream dis;
-		int[]a= {1,2,3,4,5,6,7,8,9},b={1,5,8,4,2,3,6,7,9};
+
 		public Worker(Socket conn) throws IOException{
 			this.conn=conn;
 			dos=new DataOutputStream(conn.getOutputStream());
@@ -88,18 +90,21 @@ public class Server {
 			}	
 		}
 		private void sendRandom() throws IOException {
+			int n=dis.readByte();
+			n=n*n;
+			int[] randArray=rand(n);
 			dos.writeByte(1);
-			int[] randArray=rand();
-			for(int i=0;i<9;i++) {
+			for(int i=0;i<n;i++) {
 				dos.writeInt(randArray[i]);
 			}
+			dos.writeInt(-1);
 		}
 		
-		private int[] rand() {
-			int[] ans=new int[9];
+		private int[] rand(int n) {
+			int[] ans=new int[n];
 			Random ran=new Random();int pos=0;
 			HashSet<Integer> set=new HashSet<Integer>();
-			for(int i=1;i<10;i++) set.add(i);
+			for(int i=1;i<n+1;i++) set.add(i);
 			while(set.size()>0) {
 				int ranPos=ran.nextInt(set.size());
 				int value=(int) set.toArray()[ranPos];
@@ -109,24 +114,24 @@ public class Server {
 			}
 			if(!checkSolvable(ans)) {
 				ArrayList<Integer> listPos=new ArrayList<Integer>();
-				for(int i=8;i>0&&listPos.size()<2;i--) if(ans[i]!=9){
+				for(int i=n-1;listPos.size()<2;i--) if(ans[i]!=n){
 					listPos.add(i);
 				}
 				int temp=ans[listPos.get(0)];
 				ans[listPos.get(0)]=ans[listPos.get(1)];
 				ans[listPos.get(1)]=temp;
 			}
+			
 			return ans;
 		}
 		
 		boolean checkSolvable(int[] inp) {
 			int sumInvention=0;
-			for(int i=7;i>=0;i--) if(inp[i]!=9) {
-				for(int j=i+1;j<9;j++) if(inp[i]>inp[j]) sumInvention++;
+			for(int i=inp.length-2;i>=0;i--) if(inp[i]!=inp.length) {
+				for(int j=i+1;j<inp.length;j++) if(inp[i]>inp[j]) sumInvention++;
 					
 			}
 			return sumInvention%2==0;
-			
 		}
 		
 	}

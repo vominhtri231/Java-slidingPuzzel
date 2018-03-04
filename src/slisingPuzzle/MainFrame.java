@@ -9,8 +9,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -28,13 +30,15 @@ public class MainFrame extends JFrame implements ActionListener{
 	DataInputStream dis;
 	DataOutputStream dos;
 	int highScore;String name;
+	JComboBox<String> typeChoiser;
+	String[] type;
+	int choisedType;
 	public MainFrame() throws UnknownHostException, IOException {
-		
-		
-		
-		setSize(650,450);
+
+		setSize(700,500);
 		setLocation(300,70);
 		setLayout(null);
+		
 		
 		this.add(createControlPanel());
 		
@@ -60,29 +64,36 @@ public class MainFrame extends JFrame implements ActionListener{
 		panel.setSize(200, 360);
 		startButton=new  JButton("start");
 		startButton.addActionListener(this);
-		startButton.setLocation(20,100);
+		startButton.setLocation(50,140);
 		startButton.setSize(70,30);
 		
 		annouce=new JLabel();
-		annouce.setBounds(22, 130, 250, 35);
+		annouce.setBounds(10, 30, 250, 35);
 		annouce.setFont(new java.awt.Font("Times New Romans", 0, 20));
 		annouce.setForeground(new java.awt.Color(74, 0, 74));
 		annouce.setText("Well come!!!");
 		panel.add(annouce);
 		
 		highScoreLabel=new JLabel();
-		highScoreLabel.setBounds(22, 10, 250, 35);
+		highScoreLabel.setBounds(10, 220, 250, 35);
 		highScoreLabel.setFont(new java.awt.Font("Times New Romans", 0, 20));
 		highScoreLabel.setForeground(new java.awt.Color(74, 0, 74));
 		panel.add(highScoreLabel);
 		
 		nameLabel=new JLabel();
-		nameLabel.setBounds(22, 50, 250, 35);
+		nameLabel.setBounds(10, 260, 250, 35);
 		nameLabel.setFont(new java.awt.Font("Times New Romans", 0, 20));
 		nameLabel.setForeground(new java.awt.Color(74, 0, 74));
 		panel.add(nameLabel);
-	
-		panel.add(startButton,BorderLayout.SOUTH);
+		
+		type=new String[]{"3-3","4-4","5-5"};
+		typeChoiser=new JComboBox<String>(type);
+		choisedType=3;
+		typeChoiser.setBounds(40, 110,100,20);
+		typeChoiser.addActionListener(this);
+		panel.add(typeChoiser);
+		
+		panel.add(startButton);
 		return panel;
 	}
 	
@@ -103,7 +114,7 @@ public class MainFrame extends JFrame implements ActionListener{
 		if(e.getSource()==startButton) {
 			try {
 				dos.writeByte(1);
-				
+				dos.writeByte(choisedType);
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -111,7 +122,9 @@ public class MainFrame extends JFrame implements ActionListener{
 			this.setFocusable(true);
 			this.requestFocusInWindow(true);
 		}
-		
+		if(e.getSource()==typeChoiser) {
+			choisedType=typeChoiser.getSelectedIndex()+3;
+		}
 	}
 	
 	class Listener extends Thread{
@@ -123,18 +136,29 @@ public class MainFrame extends JFrame implements ActionListener{
 				try {
 					byte header=dis.readByte();
 					
+					
 					if(header==1) {
-						int[][] pos=new int[3][3];
-						for(int i=0;i<9;i++) {
-							int value=dis.readInt();
-							pos[i/3][i%3]=value;
-						}
+						ArrayList<Integer> list=new ArrayList<Integer>();
+						do {
+							int t=dis.readInt();
+							if(t<0) break;
+							list.add(t);
+						}while(true);
+						
+						int l=list.size();l=(int)Math.sqrt(l);
+						int[][] pos=new int[l][l];
+						for(int i=0;i<l;i++)
+							for(int j=0;j<l;j++){
+								int value=list.remove(0);
+								pos[i][j]=value;
+							}
+						
 						playField.init(pos);
 					}
 					if(header==3) {
 						highScore=dis.readInt();
 						name=dis.readUTF();
-						highScoreLabel.setText("High score:"+highScore );
+						highScoreLabel.setText("Sorted time:"+highScore );
 						nameLabel.setText("By:"+name );
 					}
 					

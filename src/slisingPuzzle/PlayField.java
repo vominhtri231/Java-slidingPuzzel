@@ -25,33 +25,20 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 	MainFrame frame;
 	boolean start;
 	Thread thread;
-	int time;
+	int time,choisedType;
+	int len=312;
 	public PlayField() {
 		
-		setSize(450, 450);
+		setSize(500, 500);
 		setLocation(200,0);
 		setBackground(new Color(86,63,26));
 		
 		setLayout(null);
-		this.setVisible(true);
-		icons=new ImageIcon[9];
-		pieces=new JLabel[3][3];
-		for(int i=0;i<3;i++) 
-			for(int j=0;j<3;j++)
-			{
-				pieces[i][j]=new JLabel();
-				pieces[i][j].setBounds(90+j*68, 120+i*68, 65, 65);
-				this.add(pieces[i][j]);
-			}	
-		
-		for(int i=0;i<8;i++) {
-			icons[i]=new ImageIcon(getClass().getResource("/ima/cropped ("+(i+1)+").jpg"));
-		}		
-		icons[8]=new ImageIcon(getClass().getResource("/ima/cropped.jpg"));
+		choisedType=0;
 		
 		mainImage=new JLabel();
-		mainImage.setBounds(30, 10, 80, 80);
-		mainImage.setIcon(new ImageIcon(getClass().getResource("/ima/main.jpg")));
+		mainImage.setBounds(30, 10,80, 80);
+		mainImage.setIcon(new ImageIcon(getClass().getResource("/ima/pic1/mini_pic1.png")));
 		
 		clock=new JLabel();
 		clock.setBounds(200,10 ,200, 50);
@@ -62,13 +49,15 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 		this.add(mainImage);
 		this.add(clock);
 		start=false;	
+		this.setVisible(true);
 	}
 	
 	
 	public void init(int[][] position) {
+		if(position.length!=choisedType) setUpNewType(position.length);
 		time=0;
 		this.position=position;
-		specialPieceLocation=this.findSpecialPieces();		
+		specialPieceLocation=this.findSpecialPieces();	
 		update();
 		start=true;
 		
@@ -76,9 +65,36 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 		if(!thread.isAlive()) thread.start();
 	}
 	
+	private void setUpNewType(int type) {
+		
+		
+		for(int i=0;i<choisedType;i++) 
+			for(int j=0;j<choisedType;j++) {
+				this.remove(pieces[i][j]);
+			}
+		
+		choisedType=type;
+		int miniLen=len/choisedType,border=2;
+		icons=new ImageIcon[type*type];
+		pieces=new JLabel[type][type];
+		for(int i=0;i<type;i++) 
+			for(int j=0;j<type;j++){
+				pieces[i][j]=new JLabel();
+				pieces[i][j].setBounds(90+j*(miniLen+border), 120+i*(miniLen+border), miniLen, miniLen);
+				this.add(pieces[i][j]);
+			}	
+		
+		for(int i=0;i<type*type-1;i++) {
+			icons[i]=new ImageIcon(getClass().getResource("/ima/pic1/"+type+"/pic1("+i+").png"));
+		}		
+		//icons[type*type-1]=new ImageIcon(getClass().getResource("/ima/cropped.jpg"));
+		
+	}
+
+
 	private void update() {
-		for(int i=0;i<3;i++) {
-			for(int j=0;j<3;j++) {	
+		for(int i=0;i<choisedType;i++) {
+			for(int j=0;j<choisedType;j++) {	
 				int value=position[i][j];
 				pieces[i][j].setIcon(icons[value-1]);
 			}
@@ -102,7 +118,7 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 				}
 			}
 			if(key==37) {
-				if(y<2) {
+				if(y<choisedType-1) {
 					int temp=position[x][y];
 					position[x][y]=position[x][y+1];
 					position[x][y+1]=temp;
@@ -120,7 +136,7 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 				}
 			}
 			if(key==38) {
-				if(x<2) {
+				if(x<choisedType-1) {
 					int temp=position[x][y];
 					position[x][y]=position[x+1][y];
 					position[x+1][y]=temp;
@@ -134,17 +150,18 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 	}
 
 	Point findSpecialPieces() {
-		for(int i=0;i<3;i++)
-			for(int j=0;j<3;j++) {
-				if(this.position[i][j]==9) return new Point(i,j);
+		for(int i=0;i<choisedType;i++)
+			for(int j=0;j<choisedType;j++) {
+				if(this.position[i][j]==choisedType*choisedType) return new Point(i,j);
 			}
+		
 		return null;
 	}
 	
 	boolean isEnd() {
-		for(int i=0;i<3;i++)
-			for(int j=0;j<3;j++) {
-				if(i*3+j+1!=position[i][j]) return false;
+		for(int i=0;i<choisedType;i++)
+			for(int j=0;j<choisedType;j++) {
+				if(i*choisedType+j+1!=position[i][j]) return false;
 			}
 		return true;
 	}

@@ -30,7 +30,7 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 	public PlayField() {
 		
 		setSize(500, 500);
-		setLocation(200,0);
+		setLocation(300,0);
 		setBackground(new Color(86,63,26));
 		
 		setLayout(null);
@@ -87,7 +87,8 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 		for(int i=0;i<type*type-1;i++) {
 			icons[i]=new ImageIcon(getClass().getResource("/ima/pic1/"+type+"/pic1("+i+").png"));
 		}		
-		//icons[type*type-1]=new ImageIcon(getClass().getResource("/ima/cropped.jpg"));
+		
+		this.repaint();
 		
 	}
 
@@ -212,7 +213,7 @@ public class PlayField extends JPanel implements KeyListener ,Runnable{
 			}
 		}
 		try {
-			frame.endGame(time-1);
+			frame.endGame(time-1,this.choisedType);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

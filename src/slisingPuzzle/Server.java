@@ -16,7 +16,7 @@ import java.util.Vector;
 
 public class Server {
 	
-	int highScore;String name;
+	Score[] scores;
 	private ServerSocket server;
 	Vector<Worker> workers;
 	
@@ -31,22 +31,28 @@ public class Server {
 	
 	private void getHighScoreFromFile() throws IOException  {
 		BufferedReader reader=new BufferedReader(new FileReader("highScore.txt"));
-		String s = reader.readLine();	
-		String[] parts=s.split("-");
-		highScore=Integer.parseInt(parts[0]);
-		name=parts[1];
+		scores=new Score[3];
+		for(int i=0;i<3;i++) {
+			String s = reader.readLine();	
+			String[] parts=s.split("-");
+			int time=Integer.parseInt(parts[0]);
+			String name=parts[1];
+			scores[i]=new Score(time,name);
+		}	
 		reader.close();
 	}
 	
 	private void saveHighScoreToFile() throws IOException  {
 		PrintWriter printer = new PrintWriter("highScore.txt");
-		printer.print(""+highScore+"-"+name);
+		for(int i=0;i<3;i++) {
+			printer.println(""+scores[i].time+"-"+scores[i].name);
+		}	
 		printer.close();
 	}
 	
-	private void annouceHighScore() throws IOException {
+	private void annouceHighScore(int type) throws IOException {
 		for(Worker worker:workers) 
-			worker.sendHighScore();
+			worker.sendHighScore(type);
 	}
 	
 	class Worker extends Thread{
@@ -66,7 +72,7 @@ public class Server {
 					byte command=dis.readByte();
 					if(command==1) sendRandom();
 					if(command==2) takeScore();
-					if(command==3) sendHighScore();	
+					if(command==3) sendAllHighScore();
  				}
 
 			}catch(Exception e) {
@@ -74,25 +80,31 @@ public class Server {
 			}
 		}
 		
-		private void sendHighScore() throws IOException {
-			dos.writeByte(3);
-			dos.writeInt(highScore);
-			dos.writeUTF(name);
+		private void sendAllHighScore() throws IOException {
+			for(int i=3;i<6;i++) sendHighScore(i);
+		}
+		
+		private void sendHighScore(int type) throws IOException {
+				dos.writeByte(3);
+				dos.writeInt(type);
+				dos.writeInt(scores[type-3].time);
+				dos.writeUTF(scores[type-3].name);
 		}
 		private void takeScore() throws IOException {
-			int score=dis.readInt();
+			int type=dis.readInt();
+			int time=dis.readInt();
 			String newName=dis.readUTF();
-			if(highScore>score) {
-				highScore=score;
-				name=newName;
+			if(scores[type-3].time>time) {
+				scores[type-3].time=time;
+				scores[type-3].name=newName;
 				saveHighScoreToFile();
-				annouceHighScore();
+				annouceHighScore(type);
 			}	
 		}
 		private void sendRandom() throws IOException {
 			int n=dis.readByte();
 			n=n*n;
-			int[] randArray=rand(n);
+			int[] randArray=randomPuzzle(n);
 			dos.writeByte(1);
 			for(int i=0;i<n;i++) {
 				dos.writeInt(randArray[i]);
@@ -100,7 +112,7 @@ public class Server {
 			dos.writeInt(-1);
 		}
 		
-		private int[] rand(int n) {
+		private int[] randomPuzzle(int n) {
 			int[] ans=new int[n];
 			Random ran=new Random();int pos=0;
 			HashSet<Integer> set=new HashSet<Integer>();

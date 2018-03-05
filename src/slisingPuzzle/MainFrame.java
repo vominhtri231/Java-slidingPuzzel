@@ -1,7 +1,6 @@
 package slisingPuzzle;
 
 
-import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.DataInputStream;
@@ -25,71 +24,77 @@ public class MainFrame extends JFrame implements ActionListener{
 	
 	JButton startButton,resetbutton;
 	PlayField playField;
-	JLabel annouce,highScoreLabel,nameLabel;
+	JLabel annouce,highScoreLabel,autherLabel;
 	Socket soc;
 	DataInputStream dis;
 	DataOutputStream dos;
-	int highScore;String name;
+	Score[] scores;
 	JComboBox<String> typeChoiser;
 	String[] type;
 	int choisedType;
+	
+	
 	public MainFrame() throws UnknownHostException, IOException {
-
-		setSize(700,500);
+		createUI();
+		scores=new Score[3];
+		connectServer();
+	}
+	
+	private void connectServer() throws UnknownHostException, IOException {
+		soc=new Socket("localhost",9696);
+		dis=new DataInputStream(soc.getInputStream());
+		dos=new DataOutputStream(soc.getOutputStream());
+		new Listener().start();
+		dos.writeByte(3);	
+	}
+	
+	private void createUI() {
+		setSize(800,500);
 		setLocation(300,70);
 		setLayout(null);
-		
-		
+
 		this.add(createControlPanel());
 		
 		playField=new PlayField();
 		playField.frame=this;
 		this.add(playField);
-
+		this.addKeyListener(playField);
 		setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 		setVisible(true);
-		this.addKeyListener(playField);
-		
-		soc=new Socket("localhost",9696);
-		dis=new DataInputStream(soc.getInputStream());
-		dos=new DataOutputStream(soc.getOutputStream());
-		new Listener().start();
-		dos.writeByte(3);
-		
 	}
 	private JPanel createControlPanel() {
 		JPanel panel=new JPanel();
 		panel.setLayout(null);
 		
-		panel.setSize(200, 360);
+		panel.setSize(300, 360);
 		startButton=new  JButton("start");
 		startButton.addActionListener(this);
-		startButton.setLocation(50,140);
+		startButton.setLocation(100,140);
 		startButton.setSize(70,30);
 		
 		annouce=new JLabel();
-		annouce.setBounds(10, 30, 250, 35);
+		annouce.setBounds(20, 30, 340, 35);
 		annouce.setFont(new java.awt.Font("Times New Romans", 0, 20));
 		annouce.setForeground(new java.awt.Color(74, 0, 74));
-		annouce.setText("Well come!!!");
+		annouce.setText("CLick start to begin!!!");
 		panel.add(annouce);
 		
 		highScoreLabel=new JLabel();
-		highScoreLabel.setBounds(10, 220, 250, 35);
+		highScoreLabel.setBounds(20, 220, 340, 35);
 		highScoreLabel.setFont(new java.awt.Font("Times New Romans", 0, 20));
 		highScoreLabel.setForeground(new java.awt.Color(74, 0, 74));
 		panel.add(highScoreLabel);
 		
-		nameLabel=new JLabel();
-		nameLabel.setBounds(10, 260, 250, 35);
-		nameLabel.setFont(new java.awt.Font("Times New Romans", 0, 20));
-		nameLabel.setForeground(new java.awt.Color(74, 0, 74));
-		panel.add(nameLabel);
+		autherLabel=new JLabel();
+		autherLabel.setBounds(20, 260, 340, 35);
+		autherLabel.setFont(new java.awt.Font("Times New Romans", 0, 20));
+		autherLabel.setForeground(new java.awt.Color(74, 0, 74));
+		panel.add(autherLabel);
 		
 		type=new String[]{"3-3","4-4","5-5"};
 		typeChoiser=new JComboBox<String>(type);
 		choisedType=3;
-		typeChoiser.setBounds(40, 110,100,20);
+		typeChoiser.setBounds(90, 110,100,20);
 		typeChoiser.addActionListener(this);
 		panel.add(typeChoiser);
 		
@@ -97,13 +102,15 @@ public class MainFrame extends JFrame implements ActionListener{
 		return panel;
 	}
 	
-	public void endGame(int score) throws IOException {
-		this.annouce.setText("You solved it in "+score+" milisecs");
+	public void endGame(int time,int type) throws IOException {
+		this.annouce.setText("You solved "+type+"X"+type+ " in "+time +" milisecs");
 		
-		if(score<highScore) {
+		if(scores[type-3].time>time) {
 			String name=JOptionPane.showInputDialog("Enter your name");
+			if(name==null) name="Unknow player";
 			dos.writeByte(2);
-			dos.writeInt(score);
+			dos.writeInt(type);
+			dos.writeInt(time);
 			dos.writeUTF(name);
 		}
 		
@@ -124,6 +131,8 @@ public class MainFrame extends JFrame implements ActionListener{
 		}
 		if(e.getSource()==typeChoiser) {
 			choisedType=typeChoiser.getSelectedIndex()+3;
+			highScoreLabel.setText("Sorted time :"+ scores[choisedType-3].time +" milisecs");
+			autherLabel.setText("By "+scores[choisedType-3].name);
 		}
 	}
 	
@@ -136,35 +145,42 @@ public class MainFrame extends JFrame implements ActionListener{
 				try {
 					byte header=dis.readByte();
 					
-					
-					if(header==1) {
-						ArrayList<Integer> list=new ArrayList<Integer>();
-						do {
-							int t=dis.readInt();
-							if(t<0) break;
-							list.add(t);
-						}while(true);
-						
-						int l=list.size();l=(int)Math.sqrt(l);
-						int[][] pos=new int[l][l];
-						for(int i=0;i<l;i++)
-							for(int j=0;j<l;j++){
-								int value=list.remove(0);
-								pos[i][j]=value;
-							}
-						
-						playField.init(pos);
-					}
-					if(header==3) {
-						highScore=dis.readInt();
-						name=dis.readUTF();
-						highScoreLabel.setText("Sorted time:"+highScore );
-						nameLabel.setText("By:"+name );
-					}
+					if(header==1) getRandomPuzzel();
+					if(header==3) getHighScore();
 					
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
+			}
+		}
+		
+		private void getRandomPuzzel() throws IOException {
+			ArrayList<Integer> list=new ArrayList<Integer>();
+			do {
+				int t=dis.readInt();
+				if(t<0) break;
+				list.add(t);
+			}while(true);
+			
+			int l=list.size();l=(int)Math.sqrt(l);
+			int[][] pos=new int[l][l];
+			for(int i=0;i<l;i++)
+				for(int j=0;j<l;j++){
+					int value=list.remove(0);
+					pos[i][j]=value;
+				}
+			
+			playField.init(pos);
+		}
+		
+		private void getHighScore() throws IOException {
+			int type=dis.readInt();
+			int time=dis.readInt();
+			String name=dis.readUTF();
+			scores[type-3]=new Score(time,name);
+			if(choisedType==type) {
+				highScoreLabel.setText("Sorted time :"+ scores[choisedType-3].time);
+				autherLabel.setText("By "+scores[choisedType-3].name);
 			}
 		}
 	}

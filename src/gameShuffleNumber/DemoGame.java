@@ -8,6 +8,10 @@ import javax.swing.*;
 
 public class DemoGame extends JFrame implements ActionListener{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	JButton []btnumber = new JButton [10] ;
 	JLabel lbtittle;
 	JButton btnexit;
